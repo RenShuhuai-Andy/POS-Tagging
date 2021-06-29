@@ -26,3 +26,13 @@ Change `bert-base` to `roberta-base` and `roberta-large` as you need.
 ## Result
 
 **Result on the dev set**
+
+|                              | loss           | accuracy       | precision       | recall          | f1               |
+| ---------------------------- | -------------- | -------------- | --------------- | --------------- | ---------------- |
+| BERT+Softmax+CE_loss         | 0.18 |  95.79  |   95.24  |  95.63    | 95.44 |
+
+**Result on the test set**
+
+|                              | loss           | accuracy       | precision       | recall          | f1               |
+| ---------------------------- | -------------- | -------------- | --------------- | --------------- | ---------------- |
+| BERT+Softmax+CE_loss         | 0.18 |  95.84  |   95.29  |  95.71    | 95.50 |

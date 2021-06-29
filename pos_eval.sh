@@ -1,10 +1,12 @@
+DATA_TYPE=simplified
 BATCH_SIZE=32
 SEED=888
-DATA_DIR=cluener_bios/
-BERT_PATH=results/bert-base
+DATA_DIR=data/$DATA_TYPE
+BERT_PATH=results/bert-base/$DATA_TYPE
 MAX_LENGTH=128
 LOSS_TYPE=CrossEntropyLoss
-python3 token-classification/run_ner.py \
+
+python3 token-classification/run_pos.py \
    --data_dir $DATA_DIR \
    --labels $DATA_DIR/labels.txt \
    --model_name_or_path $BERT_PATH \
