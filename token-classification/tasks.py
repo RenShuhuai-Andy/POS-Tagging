@@ -2,9 +2,7 @@ import logging
 import os
 from typing import List, TextIO, Union
 
-from conllu import parse_incr
-
-from utils_ner import InputExample, Split, TokenClassificationTask
+from utils_pos import InputExample, Split, TokenClassificationTask
 
 
 logger = logging.getLogger(__name__)
@@ -21,7 +19,7 @@ class NER(TokenClassificationTask):
         file_path = os.path.join(data_dir, f"{mode}.txt")
         guid_index = 1
         examples = []
-        with open(file_path, encoding="utf-8") as f:
+        with open(file_path, encoding="utf-16") as f:
             words = []
             labels = []
             for line in f:
@@ -113,29 +111,30 @@ class POS(TokenClassificationTask):
         guid_index = 1
         examples = []
 
-        with open(file_path, encoding="utf-8") as f:
-            for sentence in parse_incr(f):
-                words = []
+        with open(file_path, encoding="utf-16") as f:
+            for sentence in f:
+                tokens = []
                 labels = []
-                for token in sentence:
-                    words.append(token["form"])
-                    labels.append(token["upos"])
-                assert len(words) == len(labels)
-                if words:
-                    examples.append(InputExample(guid=f"{mode}-{guid_index}", words=words, labels=labels))
-                    guid_index += 1
+                for words in sentence.strip().split('  '):
+                    tokens_labels = words.split('/')
+                    tmp_tokens = list(tokens_labels[0])
+                    tmp_labels = [tokens_labels[1]] * len(tmp_tokens)
+                    tokens.extend(tmp_tokens)
+                    labels.extend(tmp_labels)
+                examples.append(InputExample(guid=f"{mode}-{guid_index}", words=tokens, labels=labels))
+                guid_index += 1
         return examples
 
-    def write_predictions_to_file(self, writer: TextIO, test_input_reader: TextIO, preds_list: List):
-        example_id = 0
-        for sentence in parse_incr(test_input_reader):
-            s_p = preds_list[example_id]
-            out = ""
-            for token in sentence:
-                out += f'{token["form"]} ({token["upos"]}|{s_p.pop(0)}) '
-            out += "\n"
-            writer.write(out)
-            example_id += 1
+    # def write_predictions_to_file(self, writer: TextIO, test_input_reader: TextIO, preds_list: List):  # TODO
+    #     example_id = 0
+    #     for sentence in parse_incr(test_input_reader):
+    #         s_p = preds_list[example_id]
+    #         out = ""
+    #         for token in sentence:
+    #             out += f'{token["form"]} ({token["upos"]}|{s_p.pop(0)}) '
+    #         out += "\n"
+    #         writer.write(out)
+    #         example_id += 1
 
     def get_labels(self, path: str) -> List[str]:
         if path:
@@ -143,48 +142,21 @@ class POS(TokenClassificationTask):
                 return f.read().splitlines()
         else:
             return [
-                "Nl",
-                "Vt",
-                "Us",
-                "Mo",
-                "Qc",
-                "Nt",
-                "Dc",
-                "Sy",
-                "Vc",
-                "Ng",
-                "Ac",
-                "Nc",
-                "Vn",
-                "Ua",
-                "No",
-                "Mc",
-                "Vi",
-                "Pc",
-                "Aa",
-                "Cc",
-                "An",
-                "Ad",
-                "Nz",
-                "Rc",
-                "Vx",
-                "Va",
-                "Nn",
-                "Ub",
-                "Fc",
-                "Vp",
-                "Nx",
-                "Uf",
-                "Ax",
-                "Vu",
-                "Vd",
-                "Vo",
-                "Oc",
-                "Nh",
-                "As",
-                "Zc",
-                "Ns",
-                "Ux",
-                "Ny",
-                "Ec"
+                "ADJ",
+                "ADP",
+                "ADV",
+                "AUX",
+                "CCONJ",
+                "DET",
+                "INTJ",
+                "NOUN",
+                "NUM",
+                "PART",
+                "PRON",
+                "PROPN",
+                "PUNCT",
+                "SCONJ",
+                "SYM",
+                "VERB",
+                "X",
             ]

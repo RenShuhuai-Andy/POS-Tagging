@@ -56,7 +56,7 @@ class ModelArguments:
         default=None, metadata={"help": "Pretrained config name or path if not the same as model_name"}
     )
     task_type: Optional[str] = field(
-        default="NER", metadata={"help": "Task type to fine tune in training (e.g. NER, POS, etc)"}
+        default="POS", metadata={"help": "Task type to fine tune in training (e.g. NER, POS, etc)"}
     )
     tokenizer_name: Optional[str] = field(
         default=None, metadata={"help": "Pretrained tokenizer name or path if not the same as model_name"}
@@ -117,24 +117,25 @@ class TrainerWithSpecifiedLoss(Trainer):
         else:
             raise ValueError("Doesn't support such loss type")
 
-    def compute_loss(self, model, inputs):
+    def compute_loss(self, model, inputs, return_outputs=False):
         outputs = model(**inputs)
         logits = outputs[1]  # [bsz, max_token_len, class_num]
         labels = inputs['labels']  # [bsz, max_token_len]
         attention_mask = inputs['attention_mask']  # [bsz, max_token_len]
         loss = None
         if labels is not None:
+            num_labels = model.module.num_labels if isinstance(model, torch.nn.DataParallel) else model.num_labels
             # Only keep active parts of the loss
             if attention_mask is not None:
                 active_loss = attention_mask.view(-1) == 1
-                active_logits = logits.view(-1, model.module.num_labels)  # [bsz * max_token_len, class_num]
+                active_logits = logits.view(-1, num_labels)  # [bsz * max_token_len, class_num]
                 active_labels = torch.where(
                     active_loss, labels.view(-1), torch.tensor(self.loss_fct.ignore_index).type_as(labels)
                 )  # [bsz * max_token_len]
                 loss = self.loss_fct(active_logits, active_labels)
             else:
-                loss = self.loss_fct(logits.view(-1, model.module.num_labels), labels.view(-1))
-        return loss
+                loss = self.loss_fct(logits.view(-1, num_labels), labels.view(-1))
+        return (loss, outputs) if return_outputs else loss
 
 
 def main():
@@ -193,6 +194,7 @@ def main():
     labels = token_classification_task.get_labels(data_args.labels)
     label_map: Dict[int, str] = {i: label for i, label in enumerate(labels)}
     num_labels = len(labels)
+    logger.info("num labels %d", num_labels)
 
     # Load pretrained model and tokenizer
     #
@@ -268,10 +270,10 @@ def main():
     def compute_metrics(p: EvalPrediction) -> Dict:
         preds_list, out_label_list = align_predictions(p.predictions, p.label_ids)
         return {
-            "accuracy_score": accuracy_score(out_label_list, preds_list) * 100,
-            "precision": precision_score(out_label_list, preds_list) * 100,
-            "recall": recall_score(out_label_list, preds_list) * 100,
-            "f1": f1_score(out_label_list, preds_list) * 100,
+            "accuracy_score": accuracy_score(out_label_list, preds_list),
+            "precision": precision_score(out_label_list, preds_list),
+            "recall": recall_score(out_label_list, preds_list),
+            "f1": f1_score(out_label_list, preds_list),
         }
 
     # Initialize our Trainer
@@ -287,9 +289,7 @@ def main():
 
     # Training
     if training_args.do_train:
-        trainer.train(
-            model_path=model_args.model_name_or_path if os.path.isdir(model_args.model_name_or_path) else None
-        )
+        trainer.train()
         trainer.save_model()
         # For convenience, we also re-save the tokenizer to the same directory,
         # so that you can share your model easily on huggingface.co/models =)
@@ -326,41 +326,41 @@ def main():
                 writer.write(para + '\n')
 
     # Predict
-    if training_args.do_predict:
-        test_dataset = TokenClassificationDataset(
-            token_classification_task=token_classification_task,
-            data_dir=data_args.data_dir,
-            tokenizer=tokenizer,
-            labels=labels,
-            model_type=config.model_type,
-            max_seq_length=data_args.max_seq_length,
-            overwrite_cache=data_args.overwrite_cache,
-            mode=Split.test,
-        )
-
-        predictions, label_ids, metrics = trainer.predict(test_dataset)
-        preds_list, _ = align_predictions(predictions, label_ids)
-
-        # Save predictions
-        output_test_results_file = os.path.join(training_args.output_dir, "test_results.txt")
-        output_test_predictions_file = os.path.join(training_args.output_dir, "test_predictions.txt")
-        if trainer.is_world_master():
-            with open(output_test_predictions_file, "w") as writer:
-                with open(os.path.join(data_args.data_dir, "test.txt"), "r") as f:
-                    token_classification_task.write_predictions_to_file(writer, f, preds_list)
-            logger.info("running POS Evaluation")
-            # evaluate according to CLUENER2020
-            prediction_json_lines = convert_bios_to_json_lines(output_test_predictions_file)
-            logger.info(prediction_json_lines[:5])
-            entity_f1_dict, marco_f1 = get_f1_score(pre_lines=prediction_json_lines,
-                                                gold_file=os.path.join(data_args.data_dir, "dev.json"))
-
-            with open(output_test_results_file, "w") as writer:
-                for key, value in entity_f1_dict.items():
-                    logger.info('%s: %.2f' % (key, value))
-                    writer.write('%s: %.2f\n' % (key, value))
-                logger.info("Macro f1: %.2f" % marco_f1)
-                writer.write('Macro f1: %.2f\n' % marco_f1)
+    # if training_args.do_predict:
+    #     test_dataset = TokenClassificationDataset(
+    #         token_classification_task=token_classification_task,
+    #         data_dir=data_args.data_dir,
+    #         tokenizer=tokenizer,
+    #         labels=labels,
+    #         model_type=config.model_type,
+    #         max_seq_length=data_args.max_seq_length,
+    #         overwrite_cache=data_args.overwrite_cache,
+    #         mode=Split.test,
+    #     )
+    #
+    #     predictions, label_ids, metrics = trainer.predict(test_dataset)
+    #     preds_list, _ = align_predictions(predictions, label_ids)
+    #
+    #     # Save predictions
+    #     output_test_results_file = os.path.join(training_args.output_dir, "test_results.txt")
+    #     output_test_predictions_file = os.path.join(training_args.output_dir, "test_predictions.txt")
+    #     if trainer.is_world_master():
+    #         with open(output_test_predictions_file, "w") as writer:
+    #             with open(os.path.join(data_args.data_dir, "test.txt"), "r") as f:
+    #                 token_classification_task.write_predictions_to_file(writer, f, preds_list)
+    #         logger.info("running POS Evaluation")
+    #         # evaluate according to CLUENER2020
+    #         prediction_json_lines = convert_bios_to_json_lines(output_test_predictions_file)
+    #         logger.info(prediction_json_lines[:5])
+    #         entity_f1_dict, marco_f1 = get_f1_score(pre_lines=prediction_json_lines,
+    #                                             gold_file=os.path.join(data_args.data_dir, "dev.json"))
+    #
+    #         with open(output_test_results_file, "w") as writer:
+    #             for key, value in entity_f1_dict.items():
+    #                 logger.info('%s: %.2f' % (key, value))
+    #                 writer.write('%s: %.2f\n' % (key, value))
+    #             logger.info("Macro f1: %.2f" % marco_f1)
+    #             writer.write('Macro f1: %.2f\n' % marco_f1)
 
     return results
 
