@@ -118,7 +118,7 @@ class POS(TokenClassificationTask):
                 for words in sentence.strip().split('  '):
                     tokens_labels = words.split('/')
                     tmp_tokens = list(tokens_labels[0])
-                    tmp_labels = [tokens_labels[1]] * len(tmp_tokens)
+                    tmp_labels = ['B-' + tokens_labels[1]] + ['I-' + tokens_labels[1]] * (len(tmp_tokens) - 1)
                     tokens.extend(tmp_tokens)
                     labels.extend(tmp_labels)
                 examples.append(InputExample(guid=f"{mode}-{guid_index}", words=tokens, labels=labels))

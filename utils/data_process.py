@@ -9,17 +9,21 @@ def data_analysis(file_name):
     label_set = set()
     label_dict = defaultdict(int)
     seq_len = []
-    label_pattern = re.compile(r'[A-Za-z]+')
     with open(file_name, 'r', encoding='utf-16') as f:
         for line in f:
-            line = line.split('  ')
+            if line == '\n':
+                continue
+            line = line.strip().split('  ')
             seq_len.append(len(line))
             for word in line:
-                label = label_pattern.findall(word)
-                if len(label) > 0:
-                    label = label[0]
-                    label_set.add(label)
-                    label_dict[label] += 1
+                tokens_label = word.split('/')
+                tokens = tokens_label[0]
+                label = tokens_label[1]
+                label_set.add('B-' + label)
+                label_dict['B-' + label] += 1
+                if len(list(tokens)) > 1:
+                    label_set.add('I-' + label)
+                    label_dict['I-' + label] += len(list(tokens)) - 1
     print('for file %s' % file_name)
     print('average sequence length: %d' % (sum(seq_len) / len(seq_len)))
     print('label num: %d' % len(label_set))
@@ -64,5 +68,5 @@ def data_split(file_name):
 
 if __name__ == '__main__':
     for file_name in [r'data/simplified_train_utf16.tag', r"data/traditional_train_utf16.tag"]:
-        # data_analysis(file_name)
+        data_analysis(file_name)
         data_split(file_name)

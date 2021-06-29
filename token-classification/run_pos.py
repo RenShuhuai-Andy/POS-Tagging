@@ -270,10 +270,10 @@ def main():
     def compute_metrics(p: EvalPrediction) -> Dict:
         preds_list, out_label_list = align_predictions(p.predictions, p.label_ids)
         return {
-            "accuracy_score": accuracy_score(out_label_list, preds_list),
-            "precision": precision_score(out_label_list, preds_list),
-            "recall": recall_score(out_label_list, preds_list),
-            "f1": f1_score(out_label_list, preds_list),
+            "accuracy_score": accuracy_score(out_label_list, preds_list) * 100,
+            "precision": precision_score(out_label_list, preds_list) * 100,
+            "recall": recall_score(out_label_list, preds_list) * 100,
+            "f1": f1_score(out_label_list, preds_list) * 100,
         }
 
     # Initialize our Trainer
@@ -324,6 +324,24 @@ def main():
                     para = para.replace(")", '')
                 para = para.replace(' ', '')
                 writer.write(para + '\n')
+
+    if training_args.do_predict:
+        test_dataset = TokenClassificationDataset(
+            token_classification_task=token_classification_task,
+            data_dir=data_args.data_dir,
+            tokenizer=tokenizer,
+            labels=labels,
+            model_type=config.model_type,
+            max_seq_length=data_args.max_seq_length,
+            overwrite_cache=data_args.overwrite_cache,
+            mode=Split.test,
+        )
+        result = trainer.evaluate(test_dataset)
+
+        if trainer.is_world_master():
+            logger.info("***** Test results *****")
+            for key, value in result.items():
+                logger.info("  %s = %.2f", key, value)
 
     # Predict
     # if training_args.do_predict:
