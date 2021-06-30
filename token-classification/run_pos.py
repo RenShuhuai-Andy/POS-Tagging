@@ -325,7 +325,6 @@ def main():
                 para = para.replace(' ', '')
                 writer.write(para + '\n')
 
-    if training_args.do_predict:
         test_dataset = TokenClassificationDataset(
             token_classification_task=token_classification_task,
             data_dir=data_args.data_dir,
@@ -342,43 +341,6 @@ def main():
             logger.info("***** Test results *****")
             for key, value in result.items():
                 logger.info("  %s = %.2f", key, value)
-
-    # Predict
-    # if training_args.do_predict:
-    #     test_dataset = TokenClassificationDataset(
-    #         token_classification_task=token_classification_task,
-    #         data_dir=data_args.data_dir,
-    #         tokenizer=tokenizer,
-    #         labels=labels,
-    #         model_type=config.model_type,
-    #         max_seq_length=data_args.max_seq_length,
-    #         overwrite_cache=data_args.overwrite_cache,
-    #         mode=Split.test,
-    #     )
-    #
-    #     predictions, label_ids, metrics = trainer.predict(test_dataset)
-    #     preds_list, _ = align_predictions(predictions, label_ids)
-    #
-    #     # Save predictions
-    #     output_test_results_file = os.path.join(training_args.output_dir, "test_results.txt")
-    #     output_test_predictions_file = os.path.join(training_args.output_dir, "test_predictions.txt")
-    #     if trainer.is_world_master():
-    #         with open(output_test_predictions_file, "w") as writer:
-    #             with open(os.path.join(data_args.data_dir, "test.txt"), "r") as f:
-    #                 token_classification_task.write_predictions_to_file(writer, f, preds_list)
-    #         logger.info("running POS Evaluation")
-    #         # evaluate according to CLUENER2020
-    #         prediction_json_lines = convert_bios_to_json_lines(output_test_predictions_file)
-    #         logger.info(prediction_json_lines[:5])
-    #         entity_f1_dict, marco_f1 = get_f1_score(pre_lines=prediction_json_lines,
-    #                                             gold_file=os.path.join(data_args.data_dir, "dev.json"))
-    #
-    #         with open(output_test_results_file, "w") as writer:
-    #             for key, value in entity_f1_dict.items():
-    #                 logger.info('%s: %.2f' % (key, value))
-    #                 writer.write('%s: %.2f\n' % (key, value))
-    #             logger.info("Macro f1: %.2f" % marco_f1)
-    #             writer.write('Macro f1: %.2f\n' % marco_f1)
 
     return results
 

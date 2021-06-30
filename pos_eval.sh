@@ -1,12 +1,34 @@
-DATA_TYPE=simplified
+while getopts ":b:d:c:" opt
+do
+    case $opt in
+        b)
+          echo "BERT_PATH=$OPTARG"
+          BERT_PATH=$OPTARG
+        ;;
+        d)
+          echo "DATA_TYPE=$OPTARG"
+          DATA_TYPE=$OPTARG
+        ;;
+        c)
+          echo "CUDA_VISIBLE_DEVICES=$OPTARG"
+          CUDA_VISIBLE_DEVICES=$OPTARG
+        ;;
+        ?)
+          echo "unknown parameters"
+        exit 1;;
+    esac
+done
+
+
+#DATA_TYPE=simplified
 BATCH_SIZE=32
 SEED=888
 DATA_DIR=data/$DATA_TYPE
-BERT_PATH=results/bert-base/$DATA_TYPE
+#BERT_PATH=results/bert-base/$DATA_TYPE
 MAX_LENGTH=128
 LOSS_TYPE=CrossEntropyLoss
 
-python3 token-classification/run_pos.py \
+CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES python3 token-classification/run_pos.py \
    --data_dir $DATA_DIR \
    --labels $DATA_DIR/labels.txt \
    --model_name_or_path $BERT_PATH \
