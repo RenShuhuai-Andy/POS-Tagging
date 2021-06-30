@@ -324,7 +324,9 @@ def main():
                     para = para.replace(")", '')
                 para = para.replace(' ', '')
                 writer.write(para + '\n')
-
+    # Prediction
+    if training_args.do_predict:
+        logger.info("*** Predict ***")
         test_dataset = TokenClassificationDataset(
             token_classification_task=token_classification_task,
             data_dir=data_args.data_dir,
@@ -335,12 +337,18 @@ def main():
             overwrite_cache=data_args.overwrite_cache,
             mode=Split.test,
         )
-        result = trainer.evaluate(test_dataset)
 
+        predictions, label_ids, metrics = trainer.predict(test_dataset)
+        preds_list, _ = align_predictions(predictions, label_ids)
+        # Save predictions
+        output_test_predictions_file = os.path.join(training_args.output_dir, "test_predictions.txt")
         if trainer.is_world_master():
-            logger.info("***** Test results *****")
-            for key, value in result.items():
-                logger.info("  %s = %.2f", key, value)
+            with open(os.path.join(data_args.data_dir, "test_split_info.txt"), "r") as f:
+                test_split_infos = f.readlines()
+                test_split_infos = [test_split_info.strip().split(' ') for test_split_info in test_split_infos]
+            with open(output_test_predictions_file, "w") as writer, \
+                    open(os.path.join(data_args.data_dir, "test.txt"), "r", encoding='utf-16') as f:
+                token_classification_task.write_predictions_to_file(writer, f, preds_list, test_dataset.examples, test_split_infos)
 
     return results
 

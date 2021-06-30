@@ -23,8 +23,8 @@ done
 #DATA_TYPE=simplified
 BATCH_SIZE=32
 SEED=888
-DATA_DIR=data/$DATA_TYPE
-#BERT_PATH=results/bert-base/$DATA_TYPE
+DATA_DIR=data/final_eval/$DATA_TYPE
+#BERT_PATH=results/bert-wwm-ext/$DATA_TYPE
 MAX_LENGTH=128
 LOSS_TYPE=CrossEntropyLoss
 

@@ -110,31 +110,53 @@ class POS(TokenClassificationTask):
         file_path = os.path.join(data_dir, f"{mode}.txt")
         guid_index = 1
         examples = []
+        if mode == 'test':
+            with open(os.path.join(data_dir, f"labels.txt")) as f:
+                tmp_label = f.readlines()[0].strip()
 
         with open(file_path, encoding="utf-16") as f:
             for sentence in f:
                 tokens = []
                 labels = []
                 for words in sentence.strip().split('  '):
-                    tokens_labels = words.split('/')
-                    tmp_tokens = list(tokens_labels[0])
-                    tmp_labels = ['B-' + tokens_labels[1]] + ['I-' + tokens_labels[1]] * (len(tmp_tokens) - 1)
-                    tokens.extend(tmp_tokens)
-                    labels.extend(tmp_labels)
+                    if mode == 'test':
+                        tmp_tokens = list(words)
+                        tmp_labels = [tmp_label] * len(tmp_tokens)
+                        tokens.extend(tmp_tokens)
+                        labels.extend(tmp_labels)
+                    else:
+                        tokens_labels = words.split('/')
+                        tmp_tokens = list(tokens_labels[0])
+                        tmp_labels = ['B-' + tokens_labels[1]] + ['I-' + tokens_labels[1]] * (len(tmp_tokens) - 1)
+                        tokens.extend(tmp_tokens)
+                        labels.extend(tmp_labels)
                 examples.append(InputExample(guid=f"{mode}-{guid_index}", words=tokens, labels=labels))
                 guid_index += 1
         return examples
 
-    # def write_predictions_to_file(self, writer: TextIO, test_input_reader: TextIO, preds_list: List):  # TODO
-    #     example_id = 0
-    #     for sentence in parse_incr(test_input_reader):
-    #         s_p = preds_list[example_id]
-    #         out = ""
-    #         for token in sentence:
-    #             out += f'{token["form"]} ({token["upos"]}|{s_p.pop(0)}) '
-    #         out += "\n"
-    #         writer.write(out)
-    #         example_id += 1
+    def write_predictions_to_file(self, writer: TextIO, test_input_reader: TextIO, preds_list: List, test_examples, test_split_infos):
+        infos_idx = 0
+        for i, sentence in enumerate(test_input_reader):
+            labels = []
+            tokenized_sentence = test_examples[i].words
+            predicted_labels = preds_list[i]
+            assert len(tokenized_sentence) == len(predicted_labels)
+            for words in sentence.strip().split('  '):
+                gt_tokens_len = len(list(words))
+                label = [label.strip('B-').strip('I-') for label in predicted_labels[:gt_tokens_len]]
+                labels.append(max(label, key=label.count))
+                predicted_labels = predicted_labels[gt_tokens_len:]  # remove previous gt_tokens_len label
+            assert len(sentence.strip().split('  ')) == len(labels)
+            out = '  '.join([words + '/' + label for words, label in zip(sentence.strip().split('  '), labels)])
+            writer.write(out)
+            if infos_idx < len(test_split_infos) and str(i) in test_split_infos[infos_idx]:
+                if str(i) != test_split_infos[infos_idx][-1]:
+                    writer.write('  ')
+                else:
+                    infos_idx += 1
+                    writer.write('\n')
+            else:
+                writer.write('\n')
 
     def get_labels(self, path: str) -> List[str]:
         if path:

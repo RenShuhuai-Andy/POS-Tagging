@@ -107,13 +107,16 @@ class TokenClassificationTask:
             tokens = []
             label_ids = []
             for word, label in zip(example.words, example.labels):
-                word_tokens = tokenizer.tokenize(word)
+                # word_tokens = tokenizer.tokenize(word)  # TODO
+                word_tokens = [word]
 
                 # bert-base-multilingual-cased sometimes output "nothing ([]) when calling tokenize with just a space.
                 if len(word_tokens) > 0:
                     tokens.extend(word_tokens)
                     # Use the real label id for the first token of the word, and padding ids for the remaining tokens
                     label_ids.extend([label_map[label]] + [pad_token_label_id] * (len(word_tokens) - 1))
+                else:
+                    raise ValueError('word_tokens is []!')
 
             # Account for [CLS] and [SEP] with "- 2" and with "- 3" for RoBERTa.
             special_tokens_count = tokenizer.num_special_tokens_to_add()
@@ -157,6 +160,7 @@ class TokenClassificationTask:
                 segment_ids = [cls_token_segment_id] + segment_ids
 
             input_ids = tokenizer.convert_tokens_to_ids(tokens)
+            assert len(input_ids) == len(tokens)
 
             # The mask has 1 for real tokens and 0 for padding tokens. Only real
             # tokens are attended to.
@@ -237,7 +241,8 @@ if is_torch_available():
             # and the others will use the cache.
             lock_path = cached_features_file + ".lock"
             with FileLock(lock_path):
-
+                if mode == Split.test:
+                    self.examples = token_classification_task.read_examples_from_file(data_dir, mode)
                 if os.path.exists(cached_features_file) and not overwrite_cache:
                     logger.info(f"Loading features from cached file {cached_features_file}")
                     self.features = torch.load(cached_features_file)
