@@ -346,7 +346,7 @@ def main():
             with open(os.path.join(data_args.data_dir, "test_split_info.txt"), "r") as f:
                 test_split_infos = f.readlines()
                 test_split_infos = [test_split_info.strip().split(' ') for test_split_info in test_split_infos]
-            with open(output_test_predictions_file, "w") as writer, \
+            with open(output_test_predictions_file, "w", encoding='utf-16') as writer, \
                     open(os.path.join(data_args.data_dir, "test.txt"), "r", encoding='utf-16') as f:
                 token_classification_task.write_predictions_to_file(writer, f, preds_list, test_dataset.examples, test_split_infos)
 
