@@ -34,6 +34,7 @@ Change `bert-base` to `roberta-base` and `roberta-large` as you need.
     | BERT-base         | 0.18 |  95.79  |   95.24  |  95.63    | 95.44 |
     | roBERTa-large         | 0.21 |  96.17  |   95.92  |  96.09    | 96.00 |
     | roBERTa-large + FocalLoss         | 0.15 |  96.06  |   95.59  |  95.92    | 95.75 |
+    | roBERTa-large + CRF         | 7.05 |  96.28  |   96.36  |  96.29    | 96.32 |
 
 - **Traditional**
 
@@ -51,6 +52,7 @@ Change `bert-base` to `roberta-base` and `roberta-large` as you need.
     | BERT-base         | 0.18 |  95.84  |   95.29  |  95.71    | 95.50 |
     | roBERTa-large         | 0.20 |  96.32  |   96.05  |  96.23    | 96.14 |
     | roBERTa-large + FocalLoss         | 0.15 |  96.22  |   95.74  |  96.06    | 95.90 |
+    | roBERTa-large + CRF         | 7.00 |  96.39  |   96.45  |  96.39    | 96.42 |
     
 - **Traditional**
 
