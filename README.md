@@ -1,5 +1,7 @@
 # Chinese-POS-tagging
 
+Assignment for PKU Advanced Topics in Natural Language Processing 2021 spring.
+
 POS-tagging for simplified and traditional Chinese data with BERT / RoBERTa. 
 
 ## Prepare environment
@@ -17,11 +19,18 @@ Change `bert-base` to `roberta-base` and `roberta-large` as you need.
 
 ## Train & eval
 
-> sh pos_train.sh -b bert-wwm-ext -d simplified
+#### Baseline
+> sh pos_train.sh -b bert-wwm-ext -d simplified -c 0,1,2,3
 
-- `-b` denotes the path to the pre-trained model.
-- `-d` denotes the data type, which can be chosen from ['simplified', 'traditional'']
+- `-b` denotes the path to the pre-trained model, which can be chosen from ['bert-wwm-ext', 'roberta-wwm-ext', 'roberta-wwm-ext-large'].
+- `-d` denotes the data type, which can be chosen from ['simplified', 'traditional']
 - `-c` denotes the index of CUDA device.
+
+#### Focal Loss
+> sh pos_train_focalloss.sh -b bert-wwm-ext -d simplified -c 0,1,2,3
+
+#### CRF
+> sh pos_train_crf.sh -b bert-wwm-ext -d simplified -c 0,1,2,3
 
 ## Result
 
